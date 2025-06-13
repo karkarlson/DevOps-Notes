@@ -1,0 +1,16 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cert-manager-certificate
+spec:
+  secretName: mongodb-tls
+  issuerRef:
+    name: ca-issuer
+    kind: Issuer
+  commonName: "*.mongodb-cluster-svc.mongodb.svc.cluster.local"
+  dnsNames:
+  - "*.mongodb-cluster-svc.mongodb.svc.cluster.local"
+  - "mongodb1.home.lab"
+  - "mongodb2.home.lab"
+  - "mongodb3.home.lab"

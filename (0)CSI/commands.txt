@@ -1,0 +1,10 @@
+***На кластере ceph создать пользователя:
+	ceph auth get-or-create client.fs mds 'allow r fsname=k8s path=/volumes, allow rws fsname=k8s path=/volumes/csi' mgr 'allow rw' mon 'allow r fsname=k8s' osd 'allow rw tag cephfs metadata=k8s, allow rw tag cephfs data=k8s'
+
+helm inspect values ceph-csi/ceph-csi-cephfs > cephfs.yml
+
+helm upgrade -i ceph-csi-cephfs ceph-csi/ceph-csi-cephfs -f cephfs.yml -n ceph-csi-cephfs --create-namespace
+
+kubectl apply -f secret.yaml
+
+kubectl apply -f storageclass.yaml

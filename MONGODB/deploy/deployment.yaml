@@ -1,0 +1,119 @@
+---
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: mongodb-cluster
+spec:
+  members: 3
+#  arbiters: 1
+  type: ReplicaSet
+  version: "6.0.5"
+  replicaSetHorizons:
+  - horizon: mongodb1.home.lab:31181
+  - horizon: mongodb2.home.lab:31182
+  - horizon: mongodb3.home.lab:31183
+  security:
+    tls:
+      enabled: true
+      certificateKeySecretRef:
+        name: mongodb-tls
+      caConfigMapRef:
+        name: ca-config-map
+    authentication:
+      modes: ["SCRAM"]
+
+  users:
+    - name: user1
+      db: admin
+      passwordSecretRef: # a reference to the secret that will be used to generate the user's password
+        name: user1-password
+      roles:
+        - name: clusterAdmin
+          db: admin
+        - name: userAdminAnyDatabase
+          db: admin
+      scramCredentialsSecretName: my-scram-1
+    - name: user2
+      db: admin
+      passwordSecretRef: # a reference to the secret that will be used to generate the user's password
+        name: user2-password
+      roles:
+        - name: readWrite
+          db: admin
+        - name: userAdminAnyDatabase
+          db: admin
+        - name: userAdmin
+          db: admin
+      scramCredentialsSecretName: my-scram-2
+    - name: user3
+      db: admin
+      passwordSecretRef: # a reference to the secret that will be used to generate the user's password
+        name: user3-password
+      roles:
+        - name: root
+          db: admin
+      scramCredentialsSecretName: my-scram-3
+    - name: user4
+      db: admin
+      passwordSecretRef: # a reference to the secret that will be used to generate the user's password
+        name: user4-password
+      roles:
+        - name: root
+          db: admin
+      scramCredentialsSecretName: my-scram-4
+  additionalMongodConfig:
+    storage.wiredTiger.engineConfig.journalCompressor: zlib
+  statefulSet:
+    spec:
+      volumeClaimTemplates:
+        - metadata:
+            name: data-volume
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            storageClassName: csi-cephfs-sc
+            resources:
+              requests:
+                storage: 10G
+        - metadata:
+            name: logs-volume
+          spec:
+            accessModes: [ "ReadWriteOnce" ]
+            storageClassName: csi-cephfs-sc
+            resources:
+              requests:
+                storage: 5G
+
+# the user credentials will be generated from this secret
+# once the credentials are generated, this secret is no longer required
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: user1-password
+type: Opaque
+stringData:
+  password: password
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: user2-password
+type: Opaque
+stringData:
+  password: password
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: user3-password
+type: Opaque
+stringData:
+  password: password
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: user4-password
+type: Opaque
+stringData:
+  password: password

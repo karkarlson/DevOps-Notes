@@ -1,0 +1,38 @@
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: csi-cephfs-sc
+provisioner: cephfs.csi.ceph.com
+parameters:
+  clusterID: e9b29ab0-3587-11f0-b661-000c29f8d3b8
+
+  # Имя файловой системы CephFS, в которой будет создан том
+  fsName: k8s
+
+  # (необязательно) Пул Ceph, в котором будут храниться данные тома
+  # pool: cephfs_data
+
+  # (необязательно) Разделенные запятыми опции монтирования для Ceph-fuse
+  # например:
+  # fuseMountOptions: debug
+
+  # (необязательно) Разделенные запятыми опции монтирования CephFS для ядра
+  # См. man mount.ceph чтобы узнать список этих опций. Например:
+  # kernelMountOptions: readdir_max_bytes=1048576,norbytes
+
+  # Секреты должны содержать доступы для админа и/или юзера Ceph.
+  csi.storage.k8s.io/provisioner-secret-name: csi-cephfs-secret
+  csi.storage.k8s.io/provisioner-secret-namespace: ceph-csi-cephfs
+  csi.storage.k8s.io/controller-expand-secret-name: csi-cephfs-secret
+  csi.storage.k8s.io/controller-expand-secret-namespace: ceph-csi-cephfs
+  csi.storage.k8s.io/node-stage-secret-name: csi-cephfs-secret
+  csi.storage.k8s.io/node-stage-secret-namespace: ceph-csi-cephfs
+
+  # (необязательно) Драйвер может использовать либо ceph-fuse (fuse), 
+  # либо ceph kernelclient (kernel).
+  # Если не указано, будет использоваться монтирование томов по умолчанию,
+  # это определяется поиском ceph-fuse и mount.ceph
+  # mounter: kernel
+reclaimPolicy: Delete
+allowVolumeExpansion: true

@@ -1,0 +1,23 @@
+cd /data
+
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+
+helm fetch ingress-nginx/ingress-nginx
+
+helm fetch ingress-nginx/ingress-nginx --untar
+
+cd ingress-nginx
+
+nano values.yaml
+
+#####  Change:
+		controller.progressDeadlineSeconds: 1
+		controller.readinessProbe.replicaCount: 3
+		controller.readinessProbe.minAvailable: 2
+		service.nodePorts.http: "30080"
+		service.nodePorts.http: "30443"
+
+kubectl create ns ingress-nginx
+
+helm install ingress-nginx -n ingress-nginx .
+

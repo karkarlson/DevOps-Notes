@@ -1,0 +1,25 @@
+kubectl create ns mongodb
+
+helm install community-operator mongodb/community-operator --namespace mongodb
+
+helm fetch mongodb/community-operator --untar
+
+cd deploy/
+
+create configmap ca-config-map --from-file=ca.crt=/data/kubernetes/cert-manager/ca.crt --namespace mongodb
+
+create secret tls ca-key-pair  --cert=/data/kubernetes/cert-manager/ca.crt --key=/data/kubernetes/cert-manager/ca.key --namespace mongodb
+
+kubectl apply -f issuer.yaml --namespace mongodb
+
+kubectl apply -f certificate.yaml --namespace mongodb
+
+kubectl apply -f service.yaml --namespace mongodb
+
+kubectl apply -f deployment.yaml --namespace mongodb
+
+kubectl exec --namespace mongodb -it mongodb-cluster-0  -c mongod --bash
+
+## cat /var/lib/tls/server/*.pem       ---> copy file to local machine
+
+mongosh --tls --tlsCAFile /data/kubernetes/cert-manager/ca.crt --tlsCertificateKeyFile /data/kubernetes/operators/mongodb/deploy/mongodb-cert.pem --username user3 --password password mongodb://mongodb1.home.lab:31181,mongodb2.home.lab:31182,mongodb3.home.lab:31183
