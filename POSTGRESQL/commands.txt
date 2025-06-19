@@ -1,1 +1,53 @@
-kubectl patch svc test -n postgresql-cluster -p '{"spec": {"type": "LoadBalancer", "externalIPs":["192.168.x.x"]}}'
+kubectl create ns postgres-operator
+
+kubectl create ns postgresql-cluster
+
+helm repo add postgres-operator-charts https://opensource.zalando.com/postgres-operator/charts/postgres-operator
+
+helm install postgres-operator postgres-operator-charts/postgres-operator -n postgres-operator --create-namespace
+
+helm repo add postgres-operator-ui-charts https://opensource.zalando.com/postgres-operator/charts/postgres-operator-ui
+
+helm fetch postgres-operator-ui-charts/postgres-operator-ui --untar
+
+cd postgres-operator-ui/
+
+nano values.yaml
+---------------------------------------------------------
+ingress:
+  enabled: true
+  annotations:
+    cert-manager.io/cluster-issuer: dev-ca-issuer
+    cert-manager.io/common-name: zalando.home.lab
+    cert-manager.io/subject-organizations: "home-lab"
+    cert-manager.io/subject-countries: "BLR"
+    cert-manager.io/subject-localities: "Belarus"
+    cert-manager.io/duration: "9125h"
+    cert-manager.io/renew-before: "360h"
+    cert-manager.io/usages: "server auth"
+    cert-manager.io/private-key-algorithm: RSA
+    cert-manager.io/private-key-encoding: "PKCS8"
+    cert-manager.io/private-key-size: "4096"
+    cert-manager.io/private-key-rotation-policy: Always
+    # kubernetes.io/tls-acme: "true"
+  ingressClassName: "nginx"
+  hosts:
+    - host: zalando.home.lab
+      paths: ["/"]
+  tls: 
+   - secretName: ui-tls
+     hosts:
+      - zalando.home.lab
+
+  targetNamespace: "postgresql-cluster"
+---------------------------------------------------------
+
+helm install postgres-operator-ui -n postgresql-operator .
+
+******** kubectl patch svc test -n postgresql-cluster -p '{"spec": {"type": "LoadBalancer", "externalIPs":["192.168.100.13"]}}'
+
+export PGMASTER=$(kubectl get pods -o jsonpath={.items..metadata.name} -l application=spilo,cluster-name=test,spilo-role=master -n postgresql-cluster)
+
+export PGPASSWORD=$(kubectl get secret -n postgresql-cluster test.test.credentials.postgresql.acid.zalan.do -o 'jsonpath={.data.password}' | base64 -d)
+
+kubectl port-forward $PGMASTER 6432:5432 -n postgresql-cluster

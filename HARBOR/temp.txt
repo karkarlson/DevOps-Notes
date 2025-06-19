@@ -1,0 +1,94 @@
+1. Set Up Harbor
+
+
+Install Harbor: Follow the official Harbor installation guide to install Harbor on your infrastructure.
+
+Create a Project: Log in to the Harbor UI and create a new project (e.g., my-project).
+
+Push an Image: Push a Docker image to the Harbor registry under the project you created.
+
+
+2. Generate a Robot Account (Optional but Recommended)
+
+
+In Harbor, create a robot account with permissions to pull images from the project.
+
+Save the generated credentials (username and token).
+
+
+3. Configure Containerd to Use Harbor
+
+
+Create a Containerd Config: If not already present, create or edit the Containerd configuration file, typically located at /etc/containerd/config.toml.
+
+Add Harbor as a Private Registry:
+[plugins."io.containerd.grpc.v1.cri".registry]
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
+    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."harbor.example.com"]
+      endpoint = ["https://harbor.example.com"]
+  [plugins."io.containerd.grpc.v1.cri".registry.configs]
+    [plugins."io.containerd.grpc.v1.cri".registry.configs."harbor.example.com".tls]
+      insecure_skip_verify = true
+    [plugins."io.containerd.grpc.v1.cri".registry.configs."harbor.example.com".auth]
+      username = "robot$my-robot-account"
+      password = "my-robot-token"
+
+Replace harbor.example.com with your Harbor domain, and robot$my-robot-account and my-robot-token with the robot account credentials.
+
+Restart Containerd:
+sudo systemctl restart containerd
+
+
+
+4. Configure Kubernetes to Use Harbor
+
+
+Create a Secret for Harbor:
+Create a Kubernetes secret to store the Harbor credentials:
+kubectl create secret docker-registry harbor-secret \
+  --docker-server=harbor.example.com \
+  --docker-username=robot$my-robot-account \
+  --docker-password=my-robot-token \
+  --docker-email=my-email@example.com
+
+
+Use the Secret in a Pod:
+Specify the secret in your pod or deployment YAML:
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod
+spec:
+  containers:
+  - name: my-container
+    image: harbor.example.com/my-project/my-image:latest
+  imagePullSecrets:
+  - name: harbor-secret
+
+
+
+5. Verify the Setup
+
+
+Deploy a pod using an image from Harbor and ensure it starts successfully.
+
+Check the logs of the Containerd service to confirm that it is pulling images from Harbor.
+
+
+6. Optional: Use Certificates for Secure Communication
+
+   If your Harbor instance uses a self-signed certificate, you can configure Containerd to trust the certificate by adding it to the system’s trusted CA certificates or by specifying the certificate in the config.toml file.
+
+
+7. Troubleshooting
+
+
+Check Containerd logs (journalctl -u containerd) for any errors.
+
+Ensure the Harbor URL, credentials, and image paths are correct.
+
+Verify that the Kubernetes secret is correctly configured and referenced in the pod spec.
+
+
+By following these steps, you should have Harbor configured as a private registry for Kubernetes using Containerd.
+
